@@ -6,12 +6,12 @@
 </p>
 
 <p align="center">
-  <b>A full-stack, distributed spatial living platform connecting tenants, landlords, and platform curators for spatial discovery, real-time reservations, and automated escrow settlement.</b>
+  <b>A production-grade, distributed web ecosystem connecting tenants, landlords, and platform curators for spatial discovery, real-time reservations, and automated escrow settlement.</b>
 </p>
 
 <p align="center">
   <a href="#core-architectural-highlights">Architecture</a> •
-  <a href="#technology-stack">Tech Stack</a> •
+  <a href="#complete-technology-stack">Tech Stack</a> •
   <a href="#role-based-access-control-rbac">RBAC Roles</a> •
   <a href="#key-system-features">Features</a> •
   <a href="#system-architecture--event-flow">Data Flow</a> •
@@ -23,35 +23,51 @@
 
 ## 🌟 Core Architectural Highlights
 
-- **Decoupled Cloud Architecture:** Deployed across environments with the React/Vite SPA hosted on **Vercel** and the containerized Node.js/Express WebSocket backend hosted on **Railway**[cite: 1, 9].
+- **Decoupled Cloud Architecture:** Deployed across distributed environments with the client hosted on **Vercel** and the containerized Node.js/Express WebSocket backend hosted on **Railway**[cite: 1, 9].
 - **Bidirectional WebSocket Engine:** Event-driven synchronization powered by **Socket.IO** combined with **TanStack React Query** cache invalidation to provide instant status and badge updates across clients without page reloads[cite: 16].
 - **Zero-Trust Cross-Domain Session Security:** Strict CORS whitelist isolation paired with authenticated cross-origin `httpOnly` JWT sessions configured with `SameSite=None` and `Secure` attributes[cite: 9, 17].
 - **Integrated Payment Gateway:** Escrow transaction processing managed through **Safepay Checkout**, featuring transaction logging, fallback handling, and optimistic client cache updates[cite: 15, 19].
 
 ---
 
-## 🛠 Technology Stack
+## 🛠 Complete Technology Stack
 
-### Frontend Core
-- **Framework & Build Tool:** React 18, Vite[cite: 17]
-- **Styling:** Tailwind CSS (Custom Dark Architectural Theme)[cite: 16]
-- **Server Cache & State:** TanStack Query (React Query v5), Zustand (`useAuthStore`)[cite: 16]
-- **Real-Time Client:** Socket.IO Client (`socket.io-client`)[cite: 16]
-- **HTTP Client:** Axios (Configured with `withCredentials: true` and interceptors)[cite: 16]
-- **Routing & Visuals:** React Router DOM v6, Lucide React[cite: 16]
+### Languages & Core Web Technologies
+- **JavaScript (ES6+)** — Primary language across client and server runtimes.
+- **HTML5** — Semantic layout markup, modal containers, and print document structuring.
+- **CSS3** — Custom animations, scrollbar utilities, and responsive layouts.
 
-### Backend Micro-Engine
-- **Runtime & Framework:** Node.js, Express.js (ES Modules)[cite: 17]
-- **WebSocket Gateway:** Socket.IO Server[cite: 17]
-- **Authentication & Parsing:** Cookie-Parser, JSON Web Tokens (JWT)[cite: 17]
-- **CORS Handling:** Express CORS Middleware with strict origin whitelisting[cite: 9, 17]
+### Frontend Client
+- **React.js (v18)** — Component-based architecture and state-driven UI[cite: 16].
+- **Vite** — High-performance frontend bundler, HMR engine, and build tool[cite: 17].
+- **Tailwind CSS** — Utility-first styling framework powering the bespoke dark architectural theme[cite: 16].
+- **TanStack React Query (v5)** — Asynchronous server-state synchronization, cache invalidation, and background data refetching[cite: 16].
+- **Zustand (`useAuthStore`)** — Lightweight client state management for global session credentials and role validation[cite: 16].
+- **Socket.IO Client (`socket.io-client`)** — WebSocket client for zero-latency bidirectional status updates[cite: 16].
+- **Axios** — Promise-based HTTP client configured with cross-origin credential attachment (`withCredentials: true`)[cite: 16].
+- **React Router DOM (v6)** — Client-side dynamic routing, protected navigation guards, and query param state handling[cite: 16].
+- **Lucide React (`lucide-react`)** — SVG icon set (Compass, Shield, Bookmark, Heart, Star, Receipt, etc.)[cite: 16].
 
-### Data & Cloud Infrastructure
-- **Database & ODM:** MongoDB Atlas, Mongoose[cite: 17]
-- **Media Pipeline:** Cloudinary Cloud Storage SDK
-- **Identity & Governance:** Firebase Admin SDK & Firebase Client SDK[cite: 6, 8]
-- **Payment Processing:** Safepay REST API & Sandbox Checkout SDK[cite: 15]
-- **Deployment:** Vercel (Frontend Client)[cite: 1, 9], Railway (Backend Containers)[cite: 9]
+### Backend Server & Microservices
+- **Node.js** — Asynchronous, event-driven JavaScript server runtime.
+- **Express.js** — Server framework handling RESTful endpoints, custom routing, and middleware pipelines[cite: 17].
+- **Socket.IO Server** — Real-time WebSocket engine integrated into the Node HTTP server[cite: 17].
+- **JSON Web Tokens (JWT)** — Cryptographically signed tokens for secure session generation and role verification[cite: 17].
+- **Cookie-Parser** — Middleware parsing cross-domain `httpOnly` authentication cookies[cite: 17].
+- **CORS** — Cross-Origin Resource Sharing middleware configured with explicit Vercel origin whitelisting[cite: 9, 17].
+- **Dotenv** — Environment variable management for cloud deployments[cite: 17].
+
+### Databases & Cloud Services
+- **MongoDB Atlas** — Managed cloud NoSQL database cluster storing users, listings, reservations, and transactions[cite: 17].
+- **Mongoose ODM** — Object Data Modeling library enforcing strict schemas, indexes, and relationship population[cite: 17].
+- **Firebase Authentication & Admin SDK** — Identity verification, federated identity governance, and credential authorization[cite: 6, 8].
+- **Cloudinary** — Cloud asset storage and automatic media transformation pipeline for property listings.
+- **Safepay** — Payment gateway integration with sandbox/production escrow order creation and status confirmation[cite: 15].
+
+### DevOps & Deployment
+- **Vercel** — Automated CI/CD deployment platform hosting the production React SPA[cite: 1, 9].
+- **Railway** — Cloud infrastructure running the containerized Express/Node.js API and WebSocket server[cite: 9].
+- **Git & GitHub** — Branch management, version control, and production release pipeline[cite: 3].
 
 ---
 
