@@ -1,4 +1,4 @@
-import { useState, useRef  , useEffect} from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { socket } from '../../utils/socket.js';
@@ -32,8 +32,6 @@ export default function Bookings() {
   const [receiptBooking, setReceiptBooking] = useState(null);
   const invoiceRef = useRef(null);
 
-
-
   const {
     data: bookings = [],
     isLoading,
@@ -49,7 +47,7 @@ export default function Bookings() {
     refetchOnWindowFocus: true,
   });
 
-// Permanently removes the booking record from the MongoDB database via DELETE (Used for cancelling unfinalized requests)
+  // Permanently removes the booking record from the MongoDB database via DELETE (Used for cancelling unfinalized requests)
   const deletePermanentlyMutation = useMutation({
     mutationFn: async (bookingId) => {
       const res = await api.delete(`/bookings/${bookingId}`);
@@ -79,7 +77,7 @@ export default function Bookings() {
     },
   });
 
-const [payingId, setPayingId] = useState(null);
+  const [payingId, setPayingId] = useState(null);
 
   const handlePayWithSafepay = async (bookingId) => {
     try {
@@ -89,6 +87,7 @@ const [payingId, setPayingId] = useState(null);
 
       if (!checkoutUrl) {
         alert('Could not start Safepay session');
+        setPayingId(null);
         return;
       }
 
@@ -104,63 +103,126 @@ const [payingId, setPayingId] = useState(null);
         `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
       );
 
-      // Poll window: As soon as tenant completes and closes the modal, sync & confirm!
-      const timer = setInterval(async () => {
-        if (!popup || popup.closed) {
-          clearInterval(timer);
-          setPayingId(null);
+      let isFinalized = false;
 
-          try {
-            // Save transaction to MongoDB and update booking to confirmed
-            await api.post(`/bookings/${bookingId}/finalize-payment`, {
-              tracker: trackerToken,
+      const triggerImmediateFinalize = async () => {
+        if (isFinalized) return;
+        isFinalized = true;
+        clearInterval(timer);
+        window.removeEventListener('message', handleMessage);
+
+        // 1. Optimistically switch state to confirmed in cache immediately (0ms delay)
+        queryClient.setQueryData(['bookings', user?._id], (oldBookings) => {
+          if (!Array.isArray(oldBookings)) return oldBookings;
+          return oldBookings.map((b) =>
+            b._id === bookingId
+              ? { ...b, status: 'confirmed', paymentStatus: 'paid' }
+              : b
+          );
+        });
+
+        setPayingId(null);
+
+        try {
+          // 2. Persist confirmation in MongoDB via backend
+          const finalizeRes = await api.post(`/bookings/${bookingId}/finalize-payment`, {
+            tracker: trackerToken,
+          });
+
+          // 3. Update query cache with server confirmed object
+          if (finalizeRes.data?.booking) {
+            queryClient.setQueryData(['bookings', user?._id], (oldBookings) => {
+              if (!Array.isArray(oldBookings)) return oldBookings;
+              return oldBookings.map((b) =>
+                b._id === bookingId ? { ...b, ...finalizeRes.data.booking } : b
+              );
             });
-
-            // Invalidate React Query cache so UI updates immediately
-            await queryClient.invalidateQueries({ queryKey: ['bookings'] });
-            await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-          } catch (err) {
-            console.error('Finalize error:', err);
           }
+
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['booking-badge-count'] });
+        } catch (err) {
+          console.error('Finalize error:', err);
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
         }
-      }, 1000);
+      };
+
+      // Listen for instant postMessage from Safepay redirect/webhook
+      const handleMessage = (event) => {
+        if (event.data === 'safepay_complete' || event.data?.type === 'safepay_complete') {
+          if (popup && !popup.closed) popup.close();
+          triggerImmediateFinalize();
+        }
+      };
+      window.addEventListener('message', handleMessage);
+
+      // Fast-interval polling (300ms) to catch close instant without delay
+      const timer = setInterval(() => {
+        if (!popup || popup.closed) {
+          triggerImmediateFinalize();
+        }
+      }, 300);
     } catch (err) {
       alert(err.response?.data?.message || 'Payment initiation failed');
       setPayingId(null);
     }
   };
 
-// URL Redirection fallback (if window redirects back directly)
+  // URL Redirection fallback (if window redirects back directly)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const paymentStatus = params.get('payment');
     const orderId = params.get('order_id');
 
     if (paymentStatus === 'success' && orderId) {
+      // Optimistic instant update
+      queryClient.setQueryData(['bookings', user?._id], (oldBookings) => {
+        if (!Array.isArray(oldBookings)) return oldBookings;
+        return oldBookings.map((b) =>
+          b._id === orderId
+            ? { ...b, status: 'confirmed', paymentStatus: 'paid' }
+            : b
+        );
+      });
+
       api.post(`/bookings/${orderId}/finalize-payment`, {})
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
           queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['booking-badge-count'] });
           window.history.replaceState({}, document.title, window.location.pathname);
         })
         .catch((err) => console.error('Fallback confirmation error:', err));
     }
-  }, [queryClient]);
-
+  }, [queryClient, user?._id]);
 
   useEffect(() => {
-  const handleBookingUpdate = () => {
-    // Zero-delay cache refresh
-    queryClient.invalidateQueries({ queryKey: ['bookings'] });
-    queryClient.invalidateQueries({ queryKey: ['listing-bookings'] });
-  };
+    const handleBookingUpdate = (payload) => {
+      // If payment was settled, immediately mutate the local item to confirmed
+      if (payload?.booking?._id) {
+        queryClient.setQueryData(['bookings', user?._id], (oldBookings) => {
+          if (!Array.isArray(oldBookings)) return oldBookings;
+          return oldBookings.map((b) =>
+            b._id === payload.booking._id ? { ...b, ...payload.booking, status: 'confirmed' } : b
+          );
+        });
+      }
 
-  socket.on('booking_updated', handleBookingUpdate);
+      // Zero-delay cache refresh
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['listing-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-badge-count'] });
+    };
 
-  return () => {
-    socket.off('booking_updated', handleBookingUpdate);
-  };
-}, [queryClient]);
+    socket.on('booking_updated', handleBookingUpdate);
+    socket.on('booking_status_updated', handleBookingUpdate);
+
+    return () => {
+      socket.off('booking_updated', handleBookingUpdate);
+      socket.off('booking_status_updated', handleBookingUpdate);
+    };
+  }, [queryClient, user?._id]);
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -186,7 +248,7 @@ const [payingId, setPayingId] = useState(null);
     window.print();
   };
 
-const getStatusBadge = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
       case 'confirmed':
         return {
@@ -194,7 +256,7 @@ const getStatusBadge = (status) => {
           className: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/40',
           icon: CheckCircle2,
         };
-        case 'approved':
+      case 'approved':
         return {
           label: 'Approved (Payment Required)',
           className: 'bg-[#D2A52C]/10 text-[#D2A52C] border-[#D2A52C]/40',
@@ -220,34 +282,12 @@ const getStatusBadge = (status) => {
         };
     }
   };
+
   const calculateNights = (start, end) => {
     if (!start || !end) return 1;
     const diff = new Date(end).getTime() - new Date(start).getTime();
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
-
-// Auto-confirm booking and sync state on payment redirect
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    const orderId = urlParams.get('order_id');
-
-    if (paymentStatus === 'success' && orderId) {
-      api.patch(`/bookings/${orderId}/status`, { status: 'confirmed' })
-        .then(() => {
-          // Immediately invalidate all booking caches across tenant and host
-          queryClient.invalidateQueries({ queryKey: ['bookings'] });
-          queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-          queryClient.invalidateQueries({ queryKey: ['listing-bookings'] });
-          // Clean the query parameters from URL address bar
-          window.history.replaceState({}, document.title, window.location.pathname);
-        })
-        .catch((err) => {
-          console.error('[PAYMENT CONFIRMATION ERROR]:', err.response?.data || err.message);
-        });
-    }
-  }, [queryClient]);
-
 
   if (isLoading) {
     return (
@@ -273,15 +313,16 @@ const getStatusBadge = (status) => {
       </div>
     );
   }
+
   const handleDismiss = async (bookingId) => {
-  try {
-    await api.patch(`/bookings/${bookingId}/dismiss`);
-    queryClient.invalidateQueries({ queryKey: ['bookings'] });
-  } catch (error) {
-    console.error('Failed to dismiss record:', error);
-    alert(error.response?.data?.message || 'Could not dismiss this record');
-  }
-};
+    try {
+      await api.patch(`/bookings/${bookingId}/dismiss`);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    } catch (error) {
+      console.error('Failed to dismiss record:', error);
+      alert(error.response?.data?.message || 'Could not dismiss this record');
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -390,7 +431,7 @@ const getStatusBadge = (status) => {
                     <span className="block text-[9px] uppercase tracking-widest text-[#A5A095]">Escrow Total</span>
                   </div>
 
-<div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     {/* 1. Pending or Approved (Unpaid): Hard delete from database */}
                     {(booking.status === 'pending' || booking.status === 'approved') && (
                       <button
