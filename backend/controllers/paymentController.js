@@ -106,12 +106,13 @@ export const finalizePayment = async (req, res) => {
     await booking.save();
 
 
-    // Broadcast instant socket event
-const io = req.app.get('io');
-if (io) {
-  io.emit('booking_updated', { type: 'payment_settled', booking });
-}
 
+// Broadcast instant socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('booking_status_updated', booking);
+      io.emit('booking_updated', { type: 'payment_settled', booking });
+    }
     console.log(`[TRANSACTION STORED] Booking ${booking._id} confirmed. Transaction ID: ${updatedTransaction._id}`);
     res.status(200).json({ message: 'Transaction saved and stay confirmed', booking, transaction: updatedTransaction });
   } catch (error) {

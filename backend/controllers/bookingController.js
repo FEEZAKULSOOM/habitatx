@@ -66,6 +66,13 @@ export const createBooking = async (req, res) => {
       status: 'pending',
     });
 
+    // Broadcast instant socket events
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('booking_created', booking);
+      io.emit('booking_updated', { type: 'created', booking });
+    }
+
     console.log(`[BOOKING] Created booking ${booking._id} on listing ${listing._id} for tenant ${req.user._id}`);
     res.status(201).json(booking);
   } catch (error) {
@@ -121,6 +128,10 @@ export const dismissBooking = async (req, res) => {
 
     booking.isDismissedByUser = true;
     await booking.save();
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('booking_updated', { type: 'dismissed', bookingId: id });
+    }
 
     console.log(`[BOOKING] Dismissed booking ${id} from dashboard for user ${req.user._id}`);
     res.status(200).json({ message: 'Record dismissed successfully from dashboard', booking });
@@ -197,10 +208,11 @@ export const updateBookingStatus = async (req, res) => {
 
     booking.status = status;
     await booking.save();
-    const io = req.app.get('io');
-if (io) {
-  io.emit('booking_updated', { type: 'status_changed', booking });
-}
+const io = req.app.get('io');
+    if (io) {
+      io.emit('booking_status_updated', booking);
+      io.emit('booking_updated', { type: 'status_changed', booking });
+    }
 
     console.log(`[BOOKING] Status updated to "${status}" for booking ID: ${booking._id}`);
     res.status(200).json(booking);
@@ -264,9 +276,9 @@ export const deleteBooking = async (req, res) => {
 // Broadcast instant socket event
 const io = req.app.get('io');
 if (io) {
+  io.emit('booking_deleted', { bookingId: id });
   io.emit('booking_updated', { type: 'deleted', bookingId: id });
 }
-
 
 
     console.log(`[BOOKING] Permanently deleted booking ${id} and freed dates`);

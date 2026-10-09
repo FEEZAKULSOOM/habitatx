@@ -32,25 +32,33 @@ const isAuthorized = user?.role === 'admin' || user?.role === 'landlord' || user
     refetchOnWindowFocus: true,
   });
 
-  useEffect(() => {
-  const handleBookingUpdate = () => {
-    // Zero-delay cache refresh on admin panel
-    queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
-  };
+useEffect(() => {
+    const handleBookingUpdate = () => {
+      // Zero-delay cache refresh on admin panel and badge counter
+      queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-badge-count'] });
+    };
 
-  socket.on('booking_updated', handleBookingUpdate);
+    socket.on('booking_created', handleBookingUpdate);
+    socket.on('booking_updated', handleBookingUpdate);
+    socket.on('booking_status_updated', handleBookingUpdate);
+    socket.on('booking_deleted', handleBookingUpdate);
 
-  return () => {
-    socket.off('booking_updated', handleBookingUpdate);
-  };
-}, [queryClient]);
-  const handleStatusUpdate = async (bookingId, newStatus, listingId) => {
+    return () => {
+      socket.off('booking_created', handleBookingUpdate);
+      socket.off('booking_updated', handleBookingUpdate);
+      socket.off('booking_status_updated', handleBookingUpdate);
+      socket.off('booking_deleted', handleBookingUpdate);
+    };
+  }, [queryClient]);
+const handleStatusUpdate = async (bookingId, newStatus, listingId) => {
     try {
       setUpdatingId(bookingId);
       await api.patch(`/bookings/${bookingId}/status`, { status: newStatus });
 
       await queryClient.invalidateQueries({ queryKey: ['admin-bookings'] });
       await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['booking-badge-count'] });
       if (listingId) {
         await queryClient.invalidateQueries({ queryKey: ['listing-bookings', listingId] });
       }
