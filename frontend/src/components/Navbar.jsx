@@ -13,8 +13,12 @@ export default function Navbar() {
   const queryClient = useQueryClient();
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logout();
+    } finally {
+      queryClient.clear();
+      navigate('/login');
+    }
   };
 
   const isHostOrAdmin = user?.role === 'landlord' || user?.role === 'admin' || user?.role === 'superadmin';
@@ -44,13 +48,18 @@ export default function Navbar() {
     if (!user?._id) return;
 
     const handleRealtimeUpdate = () => {
-     queryClient.invalidateQueries({ queryKey: ['booking-badge-count'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-badge-count'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     };
 
     socket.on('booking_updated', handleRealtimeUpdate);
+    socket.on('booking_created', handleRealtimeUpdate);
+    socket.on('booking_status_updated', handleRealtimeUpdate);
 
     return () => {
       socket.off('booking_updated', handleRealtimeUpdate);
+      socket.off('booking_created', handleRealtimeUpdate);
+      socket.off('booking_status_updated', handleRealtimeUpdate);
     };
   }, [user?._id, queryClient]);
 

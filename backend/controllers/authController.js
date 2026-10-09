@@ -100,11 +100,17 @@ export const loginUser = async (req, res) => {
 // @access  Public
 export const logoutUser = (req, res) => {
   console.log('[AUTH] Logging out user and clearing cookie');
+
+  // Must match the exact production cross-site cookie options
   res.cookie('jwt', '', {
     httpOnly: true,
     expires: new Date(0),
+    secure: true,      // REQUIRED for HTTPS / Railway
+    sameSite: 'none',  // REQUIRED for cross-site (Vercel <-> Railway)
+    path: '/',         // Ensures the root path cookie is targeted
   });
-  res.status(200).json({ message: 'Logged out successfully' });
+
+  res.status(200).json({ success: true, message: 'Logged out successfully' });
 };
 
 // @desc    Get current logged in user profile
