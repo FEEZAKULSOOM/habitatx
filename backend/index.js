@@ -33,7 +33,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: ['http://127.0.0.1:5173',
-      process.env.CLIENT_URL
+      process.env.CLIENT_URL,
+      'https://habitatx-nine.vercel.app'
     ],
     credentials: true,
   },
@@ -51,7 +52,7 @@ app.set('io', io);
 
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173' , 'https://habitatx-nine.vercel.app'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
