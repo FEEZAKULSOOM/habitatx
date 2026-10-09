@@ -1,0 +1,88 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-obsidian: #070707;
+  --color-charcoal: #111110;
+  --color-graphite: #181816;
+  --color-surface-elevated: #20201D;
+  --color-border-subtle: #262522;
+  --color-border-active: #3D3B35;
+  --color-ivory: #F4F0E6;
+  --color-stone-muted: #A5A095;
+  --color-mustard: #D2A52C;
+  --color-mustard-hover: #E3B53B;
+  --color-gold-deep: #8B6818;
+
+  --font-display: 'Syne', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #070707;
+  color: #F4F0E6;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Custom architectural hairline focus rings */
+*:focus-visible {
+  outline: 1px solid #D2A52C !important;
+  outline-offset: 2px !important;
+}
+
+/* Minimalist architectural scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070707;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262522;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D2A52C;
+}
+
+/* Leaflet dark architectural treatment */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #0B0B0A !important;
+  z-index: 10;
+}
+
+.leaflet-tile-pane {
+  filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.35);
+}
+
+.leaflet-bar a {
+  background-color: #111110 !important;
+  color: #F4F0E6 !important;
+  border-bottom: 1px solid #262522 !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #20201D !important;
+  color: #D2A52C !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #111110 !important;
+  color: #F4F0E6 !important;
+  border: 1px solid #262522;
+  border-radius: 4px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8) !important;
+}
