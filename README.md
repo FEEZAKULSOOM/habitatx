@@ -1,4 +1,4 @@
-```markdown
+
 # HABITATX — Architectural Living & Real-Time Booking Platform
 
 <p align="center">
