@@ -11,11 +11,19 @@ export const registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
     console.log('[AUTH] Registration attempt:', { name, email, role });
 
-    if (!name || !email || !password) {
+if (!name || !email || !password) {
       console.warn('[AUTH] Registration failed: Missing required fields');
       return res.status(400).json({ message: 'All fields are required' });
     }
 
+    const trimmedName = name.trim();
+    const nameRegex = /^[a-zA-Z\s'-]{2,50}$/;
+    if (!nameRegex.test(trimmedName)) {
+      console.warn('[AUTH] Registration failed: Invalid name format:', name);
+      return res.status(400).json({
+        message: 'Name must be 2-50 characters long and contain only letters (no numbers or symbols)',
+      });
+    }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       console.warn(`[AUTH] Registration failed: Email ${email} already exists`);
@@ -27,8 +35,9 @@ export const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+
     const user = await User.create({
-      name,
+      name: trimmedName,
       email,
       password: hashedPassword,
       role: role === 'landlord' ? 'landlord' : 'tenant',

@@ -311,7 +311,7 @@ const getStatusBadge = (status) => {
                 </div>
               </div>
             </div>
-          ))}
+          ))}``
         </div>
       )}
     </div>

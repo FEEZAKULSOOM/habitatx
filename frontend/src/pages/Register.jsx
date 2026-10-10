@@ -93,13 +93,14 @@ export default function Register() {
             <label className="block font-mono text-[10px] uppercase tracking-wider text-[#A5A095]">Legal / Display Name</label>
             <input
               type="text"
+              pattern="^[a-zA-Z\s'-]{2,50}$"
+              title="Name must contain only letters and be between 2 and 50 characters"
               {...register('name')}
               className="mt-1.5 w-full border border-[#262522] bg-[#141413] px-3.5 py-2.5 font-mono text-xs text-[#F4F0E6] placeholder-[#A5A095]/40 focus:border-[#D2A52C] focus:outline-none"
               placeholder="Jane Doe"
             />
             {errors.name && <p className="mt-1 font-mono text-xs text-rose-400">{errors.name.message}</p>}
           </div>
-
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-wider text-[#A5A095]">Email Specification</label>
             <input
