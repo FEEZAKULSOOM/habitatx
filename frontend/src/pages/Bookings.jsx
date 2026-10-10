@@ -248,8 +248,14 @@ export default function Bookings() {
     window.print();
   };
 
-  const getStatusBadge = (status) => {
+const getStatusBadge = (status) => {
     switch (status) {
+      case 'completed':
+        return {
+          label: 'Completed Stay',
+          className: 'bg-blue-950/60 text-blue-300 border-blue-800/40',
+          icon: CheckCircle2,
+        };
       case 'confirmed':
         return {
           label: 'Confirmed Reservation',
@@ -446,26 +452,28 @@ export default function Bookings() {
                       </button>
                     )}
 
-                    {/* 2. Confirmed: Locked with financial settlement; cannot hard delete */}
+{/* 2. Confirmed: Active stay; show E-Receipt */}
                     {booking.status === 'confirmed' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setReceiptBooking(booking)}
-                          className="inline-flex items-center gap-1.5 border border-[#262522] bg-[#141413] px-3.5 py-1.5 font-mono text-xs uppercase tracking-wider text-[#F4F0E6] hover:border-[#D2A52C]"
-                        >
-                          <Receipt className="h-3.5 w-3.5 text-[#D2A52C]" />
-                          <span>E-Receipt</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReviewBooking(booking)}
-                          className="inline-flex items-center gap-1.5 border border-[#D2A52C] bg-[#D2A52C] px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-semibold text-[#070707] hover:bg-[#E3B53B]"
-                        >
-                          <Star className="h-3.5 w-3.5 fill-[#070707]" />
-                          <span>Leave Review</span>
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        onClick={() => setReceiptBooking(booking)}
+                        className="inline-flex items-center gap-1.5 border border-[#262522] bg-[#141413] px-3.5 py-1.5 font-mono text-xs uppercase tracking-wider text-[#F4F0E6] hover:border-[#D2A52C]"
+                      >
+                        <Receipt className="h-3.5 w-3.5 text-[#D2A52C]" />
+                        <span>E-Receipt</span>
+                      </button>
+                    )}
+
+                    {/* 3. Completed: Stay finalized; show Leave Review */}
+                    {booking.status === 'completed' && (
+                      <button
+                        type="button"
+                        onClick={() => setReviewBooking(booking)}
+                        className="inline-flex items-center gap-1.5 border border-[#D2A52C] bg-[#D2A52C] px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-semibold text-[#070707] hover:bg-[#E3B53B]"
+                      >
+                        <Star className="h-3.5 w-3.5 fill-[#070707]" />
+                        <span>Leave Review</span>
+                      </button>
                     )}
 
                     {/* 3. Rejected or Cancelled: Dismiss from personal view */}

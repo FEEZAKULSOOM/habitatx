@@ -95,7 +95,17 @@ export const getMyBookings = async (req, res) => {
       ? { landlord: req.user._id }
       : { tenant: req.user._id, isDismissedByUser: { $ne: true } };
 
-    console.log(`[BOOKING] Fetching bookings for ${req.user.role} ID: ${req.user._id}`);
+console.log(`[BOOKING] Fetching bookings for ${req.user.role} ID: ${req.user._id}`);
+
+    // Auto-complete confirmed stays past checkout date in MongoDB
+    await Booking.updateMany(
+      {
+        ...filter,
+        status: 'confirmed',
+        endDate: { $lte: new Date() },
+      },
+      { $set: { status: 'completed' } }
+    );
 
     const bookings = await Booking.find(filter)
       .populate('listing', 'title address price images')
@@ -148,8 +158,17 @@ export const getAllBookingsAdmin = async (req, res) => {
   try {
     console.log(`[BOOKING ADMIN] Fetching isolated bookings for host/admin: ${req.user._id}`);
 
-    // If platform superadmin, allow system-wide view; otherwise isolate strictly to properties owned by this user
-    const filter = req.user.role === 'superadmin' ? {} : { landlord: req.user._id };
+const filter = req.user.role === 'superadmin' ? {} : { landlord: req.user._id };
+
+    // Auto-complete confirmed stays past checkout date in MongoDB
+    await Booking.updateMany(
+      {
+        ...filter,
+        status: 'confirmed',
+        endDate: { $lte: new Date() },
+      },
+      { $set: { status: 'completed' } }
+    );
 
     const bookings = await Booking.find(filter)
       .populate('listing', 'title address price images')
@@ -172,13 +191,17 @@ export const updateBookingStatus = async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
 
-    if (!['approved', 'confirmed', 'rejected', 'cancelled'].includes(status)) {
+if (!['approved', 'confirmed', 'completed', 'rejected', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Invalid booking status' });
     }
 
     const booking = await Booking.findById(id);
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.status === 'completed') {
+      return res.status(400).json({ message: 'Completed bookings are finalized and cannot be modified or cancelled' });
     }
 
     const isSuperAdmin = req.user.role === 'superadmin';

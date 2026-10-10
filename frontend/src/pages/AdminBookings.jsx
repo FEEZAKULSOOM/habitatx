@@ -75,15 +75,17 @@ const handleStatusUpdate = async (bookingId, newStatus, listingId) => {
     return b.status === filterTab;
   });
 
-  const getStatusBadge = (status) => {
+const getStatusBadge = (status) => {
     switch (status) {
+      case 'completed':
+        return 'border-blue-800/40 bg-blue-950/60 text-blue-300';
       case 'confirmed':
         return 'border-emerald-800/40 bg-emerald-950/60 text-emerald-300';
       case 'rejected':
         return 'border-rose-800/40 bg-rose-950/60 text-rose-300';
       case 'cancelled':
         return 'border-zinc-800/40 bg-zinc-900/60 text-zinc-400';
-        case 'approved':
+      case 'approved':
         return 'border-[#D2A52C]/40 bg-[#D2A52C]/10 text-[#D2A52C]';
       default:
         return 'border-amber-800/40 bg-amber-950/60 text-amber-300';
@@ -92,13 +94,15 @@ const handleStatusUpdate = async (bookingId, newStatus, listingId) => {
 
   const getStatusLabel = (status) => {
     switch (status) {
+      case 'completed':
+        return 'Completed';
       case 'confirmed':
         return 'Confirmed';
       case 'rejected':
         return 'Rejected';
       case 'cancelled':
         return 'Cancelled';
-        case 'approved':
+      case 'approved':
         return 'Awaiting Tenant Payment';
       default:
         return 'Pending Approval';
@@ -146,7 +150,7 @@ const handleStatusUpdate = async (bookingId, newStatus, listingId) => {
 {/* Tab Filters with Smooth Mobile Scrolling */}
 <div className="w-full max-w-full overflow-x-auto py-1 scrollbar-none">
   <div className="inline-flex min-w-max items-center gap-1 border border-[#262522] bg-[#0E0E0D] p-1 font-mono text-xs">
-    {['all', 'pending', 'confirmed', 'rejected', 'cancelled'].map((tab) => (
+{['all', 'pending', 'approved', 'confirmed', 'completed', 'rejected', 'cancelled'].map((tab) => (
       <button
         key={tab}
         type="button"
@@ -298,8 +302,8 @@ const handleStatusUpdate = async (bookingId, newStatus, listingId) => {
                     </button>
                   )}
 
-                  {/* For Rejected or Cancelled Bookings: Actions are permanently locked */}
-                  {(b.status === 'rejected' || b.status === 'cancelled') && (
+{/* For Completed, Rejected or Cancelled Bookings: Actions are permanently locked */}
+                  {(b.status === 'completed' || b.status === 'rejected' || b.status === 'cancelled') && (
                     <span className="font-mono text-[10px] uppercase tracking-wider text-[#65635D]">
                       Actions Locked
                     </span>
